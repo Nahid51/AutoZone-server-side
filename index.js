@@ -17,6 +17,7 @@ client.connect(err => {
     const productCollection = database.collection("products");
     const orderCollection = database.collection("orders");
     const customerCollection = database.collection("customers");
+    const reviewCollection = database.collection("reviews");
     console.log('connected successfully');
 
     // add products to database
@@ -40,7 +41,6 @@ client.connect(err => {
         const doc = req.body;
         const result = await orderCollection.insertOne(doc);
         res.send(result);
-        console.log(result);
     })
     app.get('/allorders', async (req, res) => {
         const email = req.query.email;
@@ -67,7 +67,6 @@ client.connect(err => {
         const updateDoc = { $set: customer };
         const result = await customerCollection.updateOne(filter, updateDoc, options);
         res.send(result);
-        console.log(result);
     })
     app.put('/customers/admin', async (req, res) => {
         const admin = req.body;
@@ -86,6 +85,16 @@ client.connect(err => {
             isAdmin = true;
         }
         res.send({ admin: isAdmin });
+    })
+    app.post('/reviews', async (req, res) => {
+        const review = req.body;
+        const result = await reviewCollection.insertOne(review);
+        res.send(result);
+    })
+    app.get('/reviews', async (req, res) => {
+        const reviews = reviewCollection.find({});
+        const result = await reviews.toArray();
+        res.send(result);
     })
 });
 
