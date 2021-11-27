@@ -1,15 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const ObjectId = require('mongodb').ObjectId;
+const { MongoClient } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+const stripe = require("stripe")(`${process.env.Stripe_Secret}`);
 app.use(cors());
 app.use(express.json());
 
-
-const { MongoClient } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bsutc.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect(err => {
@@ -122,13 +122,37 @@ client.connect(err => {
         };
         const result = await productCollection.updateOne(filter, updateDoc, options);
     })
-
     app.get('/purchaseorder/:id', async (req, res) => {
         const id = req.params.id;
         const query = { _id: ObjectId(id) };
         const result = await orderCollection.findOne(query);
         res.send(result);
     })
+    app.put('/purchaseorder/:id', async (req, res) => {
+        const id = req.params.id;
+        const payment = req.body;
+        const query = { _id: ObjectId(id) };
+        const updateDoc = {
+            $set: {
+                payment: payment
+            }
+        };
+        const result = await orderCollection.updateOne(query, updateDoc);
+        res.send(result);
+    })
+    app.post('/create-payment-intent', async (req, res) => {
+        const items = req.body;
+        const price = items.productPrice * 100;
+        // Create a PaymentIntent with the order amount and currency
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: price,
+            currency: "usd",
+            payment_method_types: ['card'],
+        });
+        res.send({
+            clientSecret: paymentIntent.client_secret,
+        });
+    });
 });
 
 
